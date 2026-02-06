@@ -1,3 +1,4 @@
+"use client";
 
 import { deleteTask, toggleTaskComplete } from "@/app/action";
 import { useState } from "react";
