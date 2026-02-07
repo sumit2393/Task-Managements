@@ -1,5 +1,5 @@
 "use client"
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import * as actions from '@/app/action'
 
 /**
@@ -26,6 +26,7 @@ type TaskFormProps = {
 export default function TaskForm({ task, onSuccess }: TaskFormProps) {
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const formRef = useRef<HTMLFormElement>(null)
 
   // Determine if form is in edit mode (true) or create mode (false)
   const isEditing = !!task
@@ -36,6 +37,11 @@ export default function TaskForm({ task, onSuccess }: TaskFormProps) {
    * Shows error if validation fails, calls onSuccess callback if successful
    */
   async function handleSubmit(formData: FormData) {
+    // Prevent multiple submissions
+    if (isSubmitting) {
+      return
+    }
+
     setError(null)
     setIsSubmitting(true)
 
@@ -49,6 +55,10 @@ export default function TaskForm({ task, onSuccess }: TaskFormProps) {
       if (result.error) {
         setError(result.error)
       } else if (onSuccess) {
+        // Reset form if in create mode
+        if (!isEditing && formRef.current) {
+          formRef.current.reset()
+        }
         // Call success callback to close modal
         onSuccess()
       }
@@ -59,8 +69,18 @@ export default function TaskForm({ task, onSuccess }: TaskFormProps) {
     }
   }
 
+  /**
+   * Prevent button clicks when form is submitting
+   */
+  function handleButtonClick(e: React.MouseEvent<HTMLButtonElement>) {
+    if (isSubmitting) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+  }
+
   return (
-    <form action={handleSubmit} className="space-y-4">
+    <form ref={formRef} action={handleSubmit} className="space-y-4">
       {/* Error message display */}
       {error && (
         <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded">
@@ -79,7 +99,8 @@ export default function TaskForm({ task, onSuccess }: TaskFormProps) {
           name="title"
           defaultValue={task?.title || ''}
           required
-          className="w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-800 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400"
+          disabled={isSubmitting}
+          className="w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-800 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
           placeholder="Enter task title"
         />
       </div>
@@ -94,7 +115,8 @@ export default function TaskForm({ task, onSuccess }: TaskFormProps) {
           name="description"
           defaultValue={task?.description || ''}
           rows={3}
-          className="w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-800 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400"
+          disabled={isSubmitting}
+          className="w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-800 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
           placeholder="Enter task description (optional)"
         />
       </div>
@@ -108,7 +130,8 @@ export default function TaskForm({ task, onSuccess }: TaskFormProps) {
           id="priority"
           name="priority"
           defaultValue={task?.priority || 'medium'}
-          className="w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400"
+          disabled={isSubmitting}
+          className="w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <option value="low">Low</option>
           <option value="medium">Medium</option>
@@ -120,6 +143,7 @@ export default function TaskForm({ task, onSuccess }: TaskFormProps) {
       <button
         type="submit"
         disabled={isSubmitting}
+        onClick={handleButtonClick}
         className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-black disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         {isSubmitting ? 'Saving...' : isEditing ? 'Update Task' : 'Add Task'}

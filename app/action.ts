@@ -29,6 +29,20 @@ export async function createTask(formData: FormData) {
   }
 
   try {
+    // Check if a task with the same title already exists
+    const existingTask = await prisma.task.findFirst({
+      where: {
+        title: {
+          equals: title.trim(),
+          mode: 'insensitive', // Case-insensitive comparison
+        },
+      },
+    })
+
+    if (existingTask) {
+      return { error: 'A task with this title already exists' }
+    }
+
     // Insert new task into database
     await prisma.task.create({
       data: {
@@ -114,6 +128,23 @@ export async function updateTask(id: number, formData: FormData) {
   }
 
   try {
+    // Check if another task with the same title exists (excluding current task)
+    const existingTask = await prisma.task.findFirst({
+      where: {
+        title: {
+          equals: title.trim(),
+          mode: 'insensitive', // Case-insensitive comparison
+        },
+        NOT: {
+          id: id, // Exclude the current task being updated
+        },
+      },
+    })
+
+    if (existingTask) {
+      return { error: 'A task with this title already exists' }
+    }
+
     // Update task in database
     await prisma.task.update({
       where: { id },
